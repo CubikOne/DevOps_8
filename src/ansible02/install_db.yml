@@ -1,0 +1,57 @@
+---
+- name: Ensure Python3 and pip are installed
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - python3
+    - python3-pip
+  become: yes
+
+- name: Install psycopg2
+  pip:
+    name: psycopg2-binary
+    state: present
+    executable: pip3
+  become: yes
+
+- name: Ensure PostgreSQL is installed
+  apt:
+    name: postgresql-14
+    state: present
+  become: yes
+
+- name: Start and enable PostgreSQL service
+  systemd:
+    name: postgresql
+    enabled: yes
+    state: started
+  become: yes
+
+- name: Update pg_hba.conf to use md5 authentication
+  lineinfile:
+    path: /etc/postgresql/14/main/pg_hba.conf
+    regexp: '^local\s+all\s+postgres\s+peer'
+    line: 'local   all             postgres                                md5'
+  become: yes
+
+- name: Restart PostgreSQL service
+  systemd:
+    name: postgresql
+    state: restarted
+  become: yes
+
+- name: Set PostgreSQL password for user postgres
+  postgresql_user:
+    name: postgres
+    password: "postgres"
+  become: yes
+
+- name: Create database hotels_db
+  postgresql_db:
+    name: hotels_db
+    state: present
+  become: yes
+  vars:
+    ansible_postgresql_user: postgres
+    ansible_postgresql_pass: "{{ postgres_password }}"

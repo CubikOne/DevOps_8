@@ -1,0 +1,43 @@
+---
+- name: Ensure OpenJDK 8 is installed
+  apt:
+    name: openjdk-8-jdk
+    state: present
+  become: yes
+
+- name: Copy hotels service code
+  ansible.builtin.copy:
+    src: "/home/vagrant/services/hotel-service"
+    dest: "/opt/hotel-service"
+  become: yes
+
+- name: Set environment variables
+  lineinfile:
+    path: /etc/environment
+    line: "{{ item }}"
+    create: yes
+  with_items:
+    - "POSTGRES_HOST=192.168.56.22"
+    - "POSTGRES_PORT=5432"
+    - "POSTGRES_DB=hotels_db"
+    - "POSTGRES_USER=postgres"
+    - "POSTGRES_PASSWORD=postgres"
+  become: yes
+
+- name: Ensure environment variables are loaded
+  shell: "source /etc/environment && export $(cat /etc/environment | xargs)"
+  args:
+    executable: /bin/bash
+  become: yes
+
+- name: Start hotels service
+  shell: |
+    export POSTGRES_HOST=192.168.56.22
+    export POSTGRES_PORT=5432
+    export POSTGRES_DB=hotels_db
+    export POSTGRES_USER=postgres
+    export POSTGRES_PASSWORD=postgres
+    java -jar /opt/hotel-service/hotel-service/target/hotel-service-0.0.1-SNAPSHOT.jar &
+  args:
+    executable: /bin/bash
+  become: yes

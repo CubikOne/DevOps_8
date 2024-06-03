@@ -1,0 +1,17 @@
+---
+- name: Copy docker-compose file from manager to node01
+  copy:
+    src: /home/vagrant/docker-compose.yml
+    dest: /home/vagrant/docker-compose.yml
+    mode: '0644'
+
+- name: Copy microservices source code from manager to node01
+  copy:
+    src: /home/vagrant/services
+    dest: /home/vagrant/
+    mode: '0644'
+
+- name: Start Docker Compose
+  command: docker-compose up -d
+  args:
+    chdir: /home/vagrant

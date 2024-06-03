@@ -1,0 +1,39 @@
+---
+- name: Install PostgreSQL and dependencies
+  apt:
+    name:
+      - postgresql
+      - python3-psycopg2
+      - libpq-dev
+      - python3-pip
+    state: present
+
+- name: Install psycopg2 via pip
+  pip:
+    name: psycopg2-binary
+    executable: pip3
+
+- name: Start PostgreSQL
+  service:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Ensure database is created
+  become_user: postgres
+  community.postgresql.postgresql_db:
+    name: example_db
+    state: present
+
+- name: Ensure example_table is created and data is inserted
+  become_user: postgres
+  community.postgresql.postgresql_query:
+    db: example_db
+    query: |
+      CREATE TABLE IF NOT EXISTS example_table (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(50)
+      );
+      INSERT INTO example_table (name)
+      VALUES ('example1'), ('example2'), ('example3')
+      ON CONFLICT (id) DO NOTHING;

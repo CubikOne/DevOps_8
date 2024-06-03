@@ -1,0 +1,55 @@
+- name: Install Consul
+  ansible.builtin.apt:
+    name: consul
+    state: present
+  become: yes
+
+- name: Create Consul directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: consul
+    group: consul
+  with_items:
+    - /opt/consul
+    - /etc/consul.d
+  become: yes
+
+- name: Copy Consul server config
+  ansible.builtin.copy:
+    src: "consul_server.hcl"
+    dest: "/etc/consul.d/consul.hcl"
+    owner: consul
+    group: consul
+  become: yes
+
+- name: Create systemd service for Consul
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/consul.service
+    content: |
+      [Unit]
+      Description=Consul Agent
+      Requires=network-online.target
+      After=network-online.target
+
+      [Service]
+      User=consul
+      Group=consul
+      ExecStart=/usr/bin/consul agent -config-dir=/etc/consul.d/ -data-dir=/opt/consul
+      ExecReload=/bin/kill -HUP $MAINPID
+      KillSignal=SIGTERM
+      Restart=on-failure
+      LimitNOFILE=4096
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: restart consul
+  become: yes
+
+- name: Start and enable Consul service
+  ansible.builtin.systemd:
+    name: consul
+    enabled: yes
+    state: started
+  become: yes
+...

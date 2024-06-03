@@ -1,0 +1,40 @@
+---
+- hosts: node01
+  become: yes
+  tasks:
+    - name: Update apt repository and cache
+      apt:
+        update_cache: yes
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Install Docker Compose
+      apt:
+        name: docker-compose
+        state: present
+
+    - name: Add vagrant user to docker group
+      user:
+        name: vagrant
+        groups: docker
+        append: yes
+
+    - name: Copy docker-compose file from manager to node01
+      copy:
+        src: /home/vagrant/docker-compose.yml
+        dest: /home/vagrant/docker-compose.yml
+        mode: '0644'
+
+    - name: Copy microservices source code from manager to node01
+      copy:
+        src: /home/vagrant/services/
+        dest: /home/vagrant/
+        mode: '0644'
+
+    - name: Start Docker Compose
+      command: docker-compose up -d
+      args:
+        chdir: /home/vagrant
